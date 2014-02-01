@@ -1,0 +1,12 @@
+{
+  "name": "nestor-video",
+  "version": "0.0.1",
+  "description": "Video library plugin for nestor",
+  "main": "video.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:nestormc/nestor-video"
+  },
+  "author": "Nicolas Joyard <joyard.nicolas@gmail.com>",
+  "license": "MIT"
+}
