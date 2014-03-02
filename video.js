@@ -1,6 +1,8 @@
 /*jshint node:true */
 "use strict";
 
+var streamVideo = require("./stream");
+
 
 function getVideoData(meta) {
 	var title;
@@ -20,12 +22,13 @@ function getVideoData(meta) {
 	// Clean up title
 	data.title = title
 		.replace(/\.(avi|divx|mpg|mpeg|mkv)$/i, "")
-		.replace(/(dvdrip|xvid|divx|hdtv|bdrip|fastsub)/ig, "")
+		.replace(/(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|dsr)/ig, "")
 		.replace(/[_.]/g, " ");
 
 	// Find show title, season and episode
 	var m = data.title.match(/^(.*)s(\d+)e(\d+)(.*)$/i);
 	if (m) {
+		data.isTVShow = m[1].trim();
 		data.tags.push("show:" + m[1].trim());
 		data.tags.push("season:" + parseInt(m[2], 10));
 		data.tags.push("episode:" + parseInt(m[3], 10));
@@ -49,6 +52,7 @@ function videoPlugin(nestor) {
 
 		title: String,
 		year: Number,
+		length: Number,
 
 		tags: [String]
 	});
@@ -80,6 +84,19 @@ function videoPlugin(nestor) {
 
 
 	var Video = mongoose.model("video", VideoSchema);
+
+
+	function fetchThumbs(filepath, id, duration) {
+		[1, 2, 3].forEach(function(mult) {
+			nestor.intents.emit(
+				"cover:video-thumb",
+				filepath,
+				mult,
+				id,
+				mult * duration / 4
+			);
+		});
+	}
 
 
 	intents.on("media:file", function analyzeFile(filepath, mimetype, metadata) {
@@ -114,6 +131,12 @@ function videoPlugin(nestor) {
 					if (err) {
 						return error("update video", err);
 					}
+
+					fetchThumbs(filepath, video._id, metadata.format.duration);
+
+					if (videodata.isTVShow) {
+						nestor.intents.emit("cover:tvshow", videodata.isTVShow);
+					}
 				});
 			} else {
 				video = new Video(videodata);
@@ -122,22 +145,17 @@ function videoPlugin(nestor) {
 						return error("save video", err);
 					}
 
-					[1, 2, 3].forEach(function(mult) {
-						nestor.intents.emit(
-							"cover:video-thumb",
-							filepath,
-							mult,
-							savedvideo._id,
-							mult * metadata.format.duration / 4
-						);
-					});
+					fetchThumbs(filepath, savedvideo._id, metadata.format.duration);
+
+					if (videodata.isTVShow) {
+						nestor.intents.emit("cover:tvshow", videodata.isTVShow);
+					}
 				});
 			}
 		});
 	});
 
 	rest.mongoose("videos", Video)
-		.set("sort", { title: 1 })
 		.set("toObject", {
 			virtuals: true,
 
@@ -145,15 +163,44 @@ function videoPlugin(nestor) {
 				delete ret.__v;
 				delete ret.id;
 			}
+		})
+		.sub(":id/stream/:format/:start")
+			.get(function(req, cb) {
+				var v = req.mongoose.doc;
+
+				cb.custom(function(req, res, next) {
+					try {
+						streamVideo(v, req.params.format, parseFloat(req.params.start), res);
+					} catch(e) {
+						res.send(404);
+					}
+				});
+			});
+
+
+	rest.mongoose("movies", Video)
+		.set("query", function() {
+			return Video.find({ tags: { $not: { $elemMatch: { $regex: /^show:/ } } } });
+		})
+		.set("sort", { title: 1 })
+		.set("toObject", {
+			virtuals: false,
+
+			transform: function(doc, ret, options) {
+				delete ret.__v;
+				delete ret.id;
+			}
 		});
 
-	/*rest.aggregate("shows", Video, [
+	rest.aggregate("tvshows", Video, [
 		{ $project: {
 			show: "$tags",
 			season: "$tags",
 			episode: "$tags",
 			tags: "$tags",
-			path: 1
+			path: 1,
+			length: 1,
+			title: 1
 		} },
 		{ $unwind: "$show" },
 		{ $match: { show: { $regex: /show:/ } } },
@@ -163,6 +210,8 @@ function videoPlugin(nestor) {
 		{ $match: { episode: { $regex: /episode:/ } } },
 		{ $project: {
 			path: 1,
+			length: 1,
+			title: 1,
 			show: { $substr: [ "$show", 5, -1 ] },
 			season: { $substr: [ "$season", 7, -1 ] },
 			episode: { $substr: [ "$episode", 8, -1 ] }
@@ -170,7 +219,7 @@ function videoPlugin(nestor) {
 		{ $sort: {
 			show: 1,
 			season: 1,
-			episode: 1
+			episode: -1
 		} },
 		{ $group: {
 			_id: {
@@ -178,18 +227,21 @@ function videoPlugin(nestor) {
 				season: "$season"
 			},
 			episodes: { $addToSet: {
-				_id: "$_id",
-				path: "$path"
+				number: "$episode",
+				videoId: "$_id",
+				path: "$path",
+				length: "$length",
+				title: "$title"
 			} }
 		} },
 		{ $group: {
 			_id: "$_id.show",
 			seasons: { $addToSet: {
-				_id: "$_id.season",
+				number: "$_id.season",
 				episodes: "$episodes"
 			} }
 		} }
-	]);*/
+	]);
 }
 
 
@@ -197,7 +249,13 @@ videoPlugin.manifest = {
 	name: "video",
 	description: "Video library",
 	dependencies: ["nestor-media"],
-	recommends: ["nestor-coverart"]
+	recommends: ["nestor-coverart"],
+	client: {
+		public: __dirname + "/client/public",
+		build: {
+			base: __dirname + "/client"
+		}
+	}
 };
 
 

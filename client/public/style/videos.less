@@ -1,0 +1,81 @@
+@coverSize: 12em;
+@coverRatio: 0.68;
+
+.tvshow {
+	min-height: @coverSize + 2*@contentBoxMargin;
+
+	position: relative;
+
+	.backdrop {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+
+		background-size: cover;
+		opacity: .1;
+	}	
+
+	.info {
+		.cover {
+			float: left;
+			margin-right: @contentBoxMargin;
+			
+			img {
+				max-width: @coverSize * @coverRatio;
+				max-height: @coverSize;
+			}
+		}
+
+		.title {
+			font-weight: bold;
+			font-size: 1.2em;
+			color: @darkGray;
+		}
+	}
+
+	ul.seasons {
+		list-style-type: none;
+		margin-top: @contentBoxMargin;
+		margin-left: @coverSize * @coverRatio + @contentBoxMargin;
+
+		li.content-list-header {
+			margin-top: @contentBoxMargin;
+			font-weight: bold;
+		}
+
+		ul.episodes {
+			list-style-type: none;
+
+			li.episode {
+				position: relative;
+
+
+
+				&>* {
+					vertical-align: text-top;
+				}
+				
+				.number {
+					margin-right: 1em;
+					color: @mlGray;
+
+					display: inline-block;
+					width: 1.5em;
+					text-align: right;
+				}
+
+				.title {
+					display: inline-block;
+				}
+
+				.length {
+					position: absolute;
+					right: 1em;
+					color: @mlGray;
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,5 @@
+@each movies
+	.movie.inline-box
+		.cover
+			img[src=/rest/covers/video:thumb-1:{{ _id }}]
+		.title "{{ title }}"

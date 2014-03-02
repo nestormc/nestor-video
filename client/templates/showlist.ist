@@ -1,0 +1,32 @@
+@define "video-tvshow-episode"
+	li.episode[data-id={{ _id }}]
+		span.number "{{ number }}"
+		span.title "{{ title || ('Episode ' + number) }}"
+		span.length "{{ humanTime(length) }}"
+
+
+@define "video-tvshow-season"
+	li.content-list-header "Season {{ number }}"
+	ul.episodes.content-list
+		@each episodes
+			@use "video-tvshow-episode"
+
+
+@define "video-tvshow"
+	.tvshow.content-box[data-id={{ _id }}]
+		.backdrop[style=background-image: url(/rest/covers/tvshow:backdrop:{{ encodeURIComponent(_id) }})]
+
+		.info
+			.cover
+				img.current[src=/rest/covers/tvshow:poster:{{ _id }}]
+			span.title "{{ _id }}"
+
+		ul.seasons
+			@each seasons
+				@use "video-tvshow-season"
+
+
+.showlist
+	@each shows
+		@use "video-tvshow"
+
