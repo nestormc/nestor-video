@@ -1,1 +1,1 @@
-[data-id={{ id }}][data-fulltitle={{ fullTitle }}][data-length={{ length }}]
+[data-id={{ _id }}][data-fulltitle={{ fullTitle }}][data-length={{ length }}]
