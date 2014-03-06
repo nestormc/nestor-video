@@ -1,7 +1,7 @@
 /*jshint browser:true */
 /*global define */
 
-define(["rest"], function(rest) {
+define(["when", "rest"], function(when, rest) {
 	"use strict";
 	
 	return {
@@ -18,6 +18,11 @@ define(["rest"], function(rest) {
 		videos: {
 			get: function(id) {
 				return rest.get("videos/" + id, { limit: 0 });
+			}
+		},
+		formats: {
+			list: function() {
+				return rest.get("videoformats");
 			}
 		}
 	};

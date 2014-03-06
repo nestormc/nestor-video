@@ -8,15 +8,15 @@ var fs = require("fs");
 
 
 var presets = {
-	"mp4": {
-		acodec: "libvo_aacenc",
+	"webm": {
+		acodec: "libvorbis",
 		abitrates: {
-			"480": "128k"
+			"480": "160k"
 		},
 		
-		vcodec: "libx264",
-		voptions: {
-			"*": ["-crf 23", "-preset ultrafast"]
+		vcodec: "libvpx",
+		vbitrates: {
+			"480": "1000k"
 		}
 	},
 
@@ -32,15 +32,15 @@ var presets = {
 		}
 	},
 
-	"webm": {
-		acodec: "libvorbis",
+	"mp4": {
+		acodec: "libvo_aacenc",
 		abitrates: {
-			"480": "160k"
+			"480": "128k"
 		},
 		
-		vcodec: "libvpx",
-		vbitrates: {
-			"480": "1000k"
+		vcodec: "libx264",
+		voptions: {
+			"*": ["-crf 23", "-preset ultrafast"]
 		}
 	}
 };

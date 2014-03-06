@@ -1,5 +1,5 @@
 @define "video-tvshow-episode"
-	li.episode[data-id={{ _id }}]
+	li.episode[data-id={{ videoId }}][data-fulltitle={{ show }} S{{ season }}E{{ number }} {{ title }}][data-length={{ length }}]
 		span.number "{{ number }}"
 		span.title "{{ title || ('Episode ' + number) }}"
 		span.length "{{ humanTime(length) }}"

@@ -4,6 +4,48 @@
 define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui, resources, tdTemplate) {
 	"use strict";
 
+	var formatPromise;
+	function preferredFormat() {
+		if (!formatPromise) {
+			var d = when.defer();
+			formatPromise = d.promise;
+			resources.formats.list().then(function(formats) {
+				var maybes = [];
+				var probably = null;
+
+				Object.keys(formats).forEach(function(name) {
+					if (probably) {
+						return;
+					}
+
+					var video = document.createElement("video");
+					var format = formats[name];
+					var mime = format.mimetype + "; codecs=\"" + format.codecs + "\"";
+
+					switch (video.canPlayType(mime)) {
+						case "probably":
+							probably = name;
+							break;
+
+						case "maybe":
+							maybes.push(name);
+							break;
+					}
+				});
+
+				if (probably) {
+					d.resolve(probably);
+				} else if (maybes.length) {
+					d.resolve(maybes[0]);
+				} else {
+					d.reject();
+				}
+			});
+		}
+
+		return formatPromise;
+	}
+
 
 	function trackPlayable(track) {
 		track.playable.dispatch();
@@ -27,17 +69,27 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 
 
 	function trackTimeUpdate(track) {
-		track.timeChanged.dispatch(track.video.currentTime);
+		track.timeChanged.dispatch(track.video.currentTime + (track.requestedSeek || 0));
 	}
 
 
 	function trackDurationChange(track) {
-		track.lengthChanged.dispatch(track.video.duration);
+		if (track.video.duration !== Infinity) {
+			track.lengthChanged.dispatch(track.video.duration + (track.requestedSeek || 0));
+		}
 	}
 
 
-	function MusicTrack(dataset, id) {
+	function VideoTrack(dataset, id) {
+		var display = document.createElement("div");
+		display.className = "full-display";
+		display.style.backgroundColor = "black";
+
 		var video = document.createElement("video");
+		video.style.display = "block";
+		video.style.width = video.style.height = "100%";
+		display.appendChild(video);
+
 		this.video = video;
 
 		video.controls = false;
@@ -64,12 +116,14 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 
 		this.requestedLoad = false;
 		this.requestedSeek = null;
+		this.format = preferredFormat();
+		this.playing = true;
 
 		this.data = datasetDeferred.promise;
 		this.data.then(function(d) {
 			metadataDeferred.resolve({
-				title: d.title,
-				length: d.length
+				title: d.fulltitle,
+				length: Number(d.length)
 			});
 		});
 
@@ -88,65 +142,67 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 		this.timeChanged = ui.signal();
 		this.lengthChanged = ui.signal();
 		this.metadata = metadataDeferred.promise;
-		this.display = when(video);
+		this.display = when(display);
 	}
 
 
-	MusicTrack.prototype = {
-		load: function() {
+	VideoTrack.prototype = {
+		_setSource: function() {
 			var track = this;
 
-			this.requestedLoad = true;
-			this.data.then(function(d) {
-				if (track.requestedLoad) {
-					if (track.audio.src === "") {
-						track.audio.src = d.file;
-					}
+			when.all([this.data, this.format]).then(function(d) {
+				var data = d[0];
+				var format = d[1];
 
-					track.audio.preload = "auto";
+				if (track.requestedLoad) {
+					track.video.src = "/rest/videos/" + data.id + "/stream/" + format + ":144/" + (track.requestedSeek || 0);
+					track.video.preload = "auto";
+
+					if (track.playing) {
+						track.play();
+					}
 				}
 			});
+		},
+
+		load: function() {
+			this.requestedLoad = true;
+			this._setSource();
 		},
 
 		stopLoading: function() {
 			this.requestedLoad = false;
 
-			this.audio.src = "";
-			this.audio.preload = "none";
+			this.video.src = "";
+			this.video.preload = "none";
 		},
 
 		play: function() {
-			if (this.requestedSeek !== null) {
-				this.audio.currentTime = this.requestedSeek;
-				this.requestedSeek = null;
-			}
-
-			this.audio.play();
+			this.playing = true;
+			this.video.play();
 		},
 
 		pause: function() {
-			this.audio.pause();
+			this.playing = false;
+			this.video.pause();
 		},
 
 		seek: function(time) {
-			try {
-				this.audio.currentTime = time;
-			} catch(e) {
-				this.requestedSeek = time;
-			}
+			this.requestedSeek = time;
+			this._setSource();
 		},
 
 		dispose: function() {
-			var audioEvents = this.events;
-			var audio = this.audio;
+			var videoEvents = this.events;
+			var video = this.video;
 
-			Object.keys(audioEvents).forEach(function(event) {
-				audio.removeEventListener(event, audioEvents[event]);
+			Object.keys(videoEvents).forEach(function(event) {
+				video.removeEventListener(event, videoEvents[event]);
 			});
 
-			audio.pause();
-			audio.preload = "none";
-			audio.src = "";
+			video.pause();
+			video.preload = "none";
+			video.src = "";
 
 			this.playable.dispose();
 			this.loaded.dispose();
@@ -157,5 +213,5 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 	};
 
 
-	return MusicTrack;
+	return VideoTrack;
 });

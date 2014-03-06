@@ -6,8 +6,24 @@ var ffmpeg = require("fluent-ffmpeg");
 
 
 var presets = {
+	"webm": {
+		mimetype: "video/webm",
+		codecs: "vp8.0, vorbis",
+
+		acodec: "libvorbis",
+		abitrates: {
+			"480": "160k"
+		},
+		
+		vcodec: "libvpx",
+		voptions: {
+			"*": ["-crf 15", "-preset ultrafast"]
+		}
+	},
+
 	"mp4": {
 		mimetype: "video/mp4",
+		codecs: "h264, aac",
 
 		acodec: "libvo_aacenc",
 		abitrates: {
@@ -22,6 +38,7 @@ var presets = {
 
 	"ogg": {
 		mimetype: "video/ogg",
+		codecs: "theora, vorbis",
 
 		acodec: "libvorbis",
 		abitrates: {
@@ -31,20 +48,6 @@ var presets = {
 		vcodec: "libtheora",
 		vbitrates: {
 			"480": "1000k"
-		}
-	},
-
-	"webm": {
-		mimetype: "video/webm",
-
-		acodec: "libvorbis",
-		abitrates: {
-			"480": "160k"
-		},
-		
-		vcodec: "libvpx",
-		voptions: {
-			"*": ["-crf 15", "-preset ultrafast"]
 		}
 	}
 };
@@ -93,3 +96,5 @@ module.exports = function streamVideo(video, preset, startTime, response) {
 		})
 		.writeToStream(response);
 };
+
+module.exports.formats = presets;

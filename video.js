@@ -82,6 +82,14 @@ function videoPlugin(nestor) {
 		return values.length ? parseInt(values[0], 10) : null;
 	});
 
+	VideoSchema.virtual("fullTitle").get(function() {
+		if (this.show) {
+			return this.show + " S" + this.season + "E" + this.episode + " " + this.title;
+		} else {
+			return this.title;
+		}
+	});
+
 
 	var Video = mongoose.model("video", VideoSchema);
 
@@ -177,6 +185,7 @@ function videoPlugin(nestor) {
 				});
 			});
 
+	rest.native("videoformats", streamVideo.formats).readonly();
 
 	rest.mongoose("movies", Video)
 		.set("query", function() {
@@ -231,7 +240,9 @@ function videoPlugin(nestor) {
 				videoId: "$_id",
 				path: "$path",
 				length: "$length",
-				title: "$title"
+				title: "$title",
+				show: "$show",
+				season: "$season"
 			} }
 		} },
 		{ $group: {
