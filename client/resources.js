@@ -17,7 +17,7 @@ define(["when", "rest"], function(when, rest) {
 		},
 		videos: {
 			get: function(id) {
-				return rest.get("videos/" + id, { limit: 0 });
+				return rest.get("videos/%s", id, { limit: 0 });
 			}
 		},
 		formats: {
