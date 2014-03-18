@@ -1,7 +1,22 @@
 /*jshint node:true */
 "use strict";
 
+var util = require("util");
 var streamVideo = require("./stream");
+
+
+
+function ucFirst(str) {
+	return str.replace(/^(.)/, function(m, letter) { return letter.toUpperCase(); });
+}
+
+var noCap = /^(a|an|and|in|of|the)$/;
+
+function capitalize(str) {
+	return ucFirst(str.replace(/\b(\w+)\b/g, function(m, word) {
+		return word.match(noCap) ? word : ucFirst(word);
+	}));
+}
 
 
 function getVideoData(meta) {
@@ -20,18 +35,17 @@ function getVideoData(meta) {
 	};
 
 	// Clean up title
-	data.title = title
+	data.title = capitalize(title
 		.replace(/\.(avi|divx|mpg|mpeg|mkv)$/i, "")
-		.replace(/(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|dsr)/ig, "")
-		.replace(/[_.]/g, " ");
+		.replace(/\b(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|fqm|dsr)\b/ig, "")
+		.replace(/[_.]/g, " "));
 
 	// Find show title, season and episode
 	var m = data.title.match(/^(.*)s(\d+)e(\d+)(.*)$/i);
 	if (m) {
-		data.isTVShow = m[1].trim();
-		data.tags.push("show:" + m[1].trim());
-		data.tags.push("season:" + parseInt(m[2], 10));
-		data.tags.push("episode:" + parseInt(m[3], 10));
+		data.show = m[1].trim();
+		data.season = parseInt(m[2], 10);
+		data.episode = parseInt(m[3], 10);
 		data.title = m[4].trim();
 	}
 
@@ -46,53 +60,117 @@ function videoPlugin(nestor) {
 	var logger = nestor.logger;
 
 
-	var VideoSchema = new mongoose.Schema({
-		path: String,
-		mime: String,
 
-		title: String,
-		year: Number,
-		length: Number,
+	/* Base schema for all video models */
 
-		tags: [String]
-	});
+	function BaseSchema() {
+		mongoose.Schema.apply(this, arguments);
 
-	VideoSchema.methods.getTagValues = function(name) {
-		return this.tags.reduce(function(values, tag) {
-			if (tag.indexOf(name + ":") === 0) {
-				values.push(tag.substr(name.length + 1));
-			}
+		this.add({
+			path: String,
+			mime: String
+		});
+	}
+	util.inherits(BaseSchema, mongoose.Schema);
 
-			return values;
-		}, []);
-	};
-
-	VideoSchema.virtual("show").get(function() {
-		var values = this.getTagValues("show");
-		return values.length ? values[0] : null;
-	});
-
-	VideoSchema.virtual("season").get(function() {
-		var values = this.getTagValues("season");
-		return values.length ? parseInt(values[0], 10) : null;
-	});
-
-	VideoSchema.virtual("episode").get(function() {
-		var values = this.getTagValues("episode");
-		return values.length ? parseInt(values[0], 10) : null;
-	});
-
-	VideoSchema.virtual("fullTitle").get(function() {
-		if (this.show) {
-			return this.show + " S" + this.season + "E" + this.episode + " " + this.title;
-		} else {
-			return this.title;
-		}
-	});
-
-
+	var VideoSchema = new BaseSchema();
 	var Video = mongoose.model("video", VideoSchema);
 
+
+
+	/* Subtitle schema */
+	var SubtitleSchema = new BaseSchema();
+	var Subtitle = Video.discriminator("subtitle", SubtitleSchema);
+
+
+
+	/* Movie schema */
+
+	var MovieSchema = new BaseSchema({
+			title: String,
+			year: Number,
+			length: Number,
+			tags: [String]
+	});
+
+	MovieSchema.virtual("fullTitle").get(function() {
+		return this.title;
+	});
+
+	var Movie = Video.discriminator("movie", MovieSchema);
+	var movieSort = { title: 1 };
+	var movieToObject = {
+		virtuals: true,
+
+		transform: function(doc, ret, options) {
+			delete ret.__v;
+			delete ret.id;
+		}
+	};
+
+	rest.mongoose("movies", Movie)
+		.set("sort", movieSort)
+		.set("toObject", movieToObject);
+
+
+
+	/* Episode schema */
+
+	var EpisodeSchema = new BaseSchema({
+			title: String,
+			year: Number,
+			length: Number,
+			tags: [String],
+			show: String,
+			season: Number,
+			episode: Number
+		});
+
+	EpisodeSchema.virtual("fullTitle").get(function() {
+		return this.show + " S" + this.season + "E" + this.episode + " " + this.title;
+	});
+
+	var Episode = Video.discriminator("episode", EpisodeSchema);
+	var episodeSort = { show: 1, season: 1, episode: 1 };
+
+	rest.mongoose("episodes", Episode)
+		.set("sort", episodeSort)
+		.set("toObject", movieToObject);
+
+
+
+	/* Streaming endpoints */
+
+	rest.resource("videostream/:id/:format/:start")
+		.get(function(req, cb) {
+			var format = req.params.format;
+			var start = req.params.start;
+
+			Video.findById(req.params.id, function(err, v) {
+				if (err) {
+					cb(err);
+				} else if (!v) {
+					cb.notFound();
+				} else {
+					cb.custom(function(req, res, next) {
+						try {
+							streamVideo(v, format, parseFloat(start), res);
+						} catch(e) {
+							res.send(404);
+						}
+					});
+				}
+			});
+		});
+
+	rest.resource("videostream/formats")
+		.get(function(req, cb) {
+			cb(null, streamVideo.formats);
+		});
+
+
+
+	/* Intent handlers */
 
 	function fetchThumbs(filepath, id, duration) {
 		[1, 2, 3].forEach(function(mult) {
@@ -107,19 +185,20 @@ function videoPlugin(nestor) {
 	}
 
 
-	intents.on("media:file", function analyzeFile(filepath, mimetype, metadata) {
-		if (mimetype.split("/")[0] !== "video") {
-			return;
-		}
-
-		var hasVideoStreams = metadata.streams.some(function(stream) {
-			return stream.codec_type === "video";
+	intents.on("nestor:startup", function() {
+		intents.emit("nestor:watchable", "movies", Movie, {
+			sort: movieSort,
+			toObject: movieToObject
 		});
+		
+		intents.emit("nestor:watchable", "episodes", Episode, {
+			sort: episodeSort,
+			toObject: movieToObject
+		});
+	});
 
-		if (!hasVideoStreams) {
-			return;
-		}
 
+	function saveVideo(filepath, mimetype, metadata) {
 		function error(action, err) {
 			logger.error("Could not %s: %s", action, err.message || err);
 		}
@@ -129,7 +208,9 @@ function videoPlugin(nestor) {
 		videodata.path = filepath;
 		videodata.mime = mimetype;
 
-		Video.findOne({ path: filepath }, function(err, video) {
+		var Model = videodata.show ? Episode : Movie;
+
+		Model.findOne({ path: filepath }, function(err, video) {
 			if (err) {
 				return error("search video", err);
 			}
@@ -142,12 +223,12 @@ function videoPlugin(nestor) {
 
 					fetchThumbs(filepath, video._id, metadata.format.duration);
 
-					if (videodata.isTVShow) {
-						nestor.intents.emit("cover:tvshow", videodata.isTVShow);
+					if (videodata.show) {
+						nestor.intents.emit("cover:tvshow", videodata.show);
 					}
 				});
 			} else {
-				video = new Video(videodata);
+				video = new Model(videodata);
 				video.save(function(err, savedvideo) {
 					if (err) {
 						return error("save video", err);
@@ -155,104 +236,66 @@ function videoPlugin(nestor) {
 
 					fetchThumbs(filepath, savedvideo._id, metadata.format.duration);
 
-					if (videodata.isTVShow) {
-						nestor.intents.emit("cover:tvshow", videodata.isTVShow);
+					if (videodata.show) {
+						nestor.intents.emit("cover:tvshow", videodata.show);
 					}
 				});
 			}
 		});
+	}
+
+	function saveSubtitle(filepath, mimetype) {
+		function error(action, err) {
+			logger.error("Could not %s: %s", action, err.message || err);
+		}
+
+		var subtitledata = {
+			path: filepath,
+			mime: mimetype
+		};
+
+		Subtitle.findOne({ path: filepath }, function(err, subtitle) {
+			if (err) {
+				return error("search subtitle", err);
+			}
+
+			if (subtitle) {
+				subtitle.update(subtitledata, function(err) {
+					if (err) {
+						return error("update subtitle", err);
+					}
+				});
+			} else {
+				subtitle = new Subtitle(subtitledata);
+				subtitle.save(function(err, savedsubtitle) {
+					if (err) {
+						return error("save video", err);
+					}
+				});
+			}
+		});
+	}
+
+
+	intents.on("media:file", function analyzeFile(filepath, mimetype, metadata) {
+		if (mimetype.split("/")[0] !== "video") {
+			return;
+		}
+
+		var hasVideoStreams = metadata.streams.some(function(stream) {
+			return stream.codec_type === "video";
+		});
+
+		var hasSubtitleStreams = metadata.streams.some(function(stream) {
+			return stream.codec_type === "subtitle";
+		});
+
+		if (hasVideoStreams) {
+			saveVideo(filepath, mimetype, metadata);
+		} else if (hasSubtitleStreams) {
+			saveSubtitle(filepath, mimetype);
+		}
 	});
-
-	rest.mongoose("videos", Video)
-		.set("toObject", {
-			virtuals: true,
-
-			transform: function(doc, ret, options) {
-				delete ret.__v;
-				delete ret.id;
-			}
-		})
-		.sub(":id/stream/:format/:start")
-			.get(function(req, cb) {
-				var v = req.mongoose.doc;
-
-				cb.custom(function(req, res, next) {
-					try {
-						streamVideo(v, req.params.format, parseFloat(req.params.start), res);
-					} catch(e) {
-						res.send(404);
-					}
-				});
-			});
-
-	rest.native("videoformats", streamVideo.formats).readonly();
-
-	rest.mongoose("movies", Video)
-		.set("query", function() {
-			return Video.find({ tags: { $not: { $elemMatch: { $regex: /^show:/ } } } });
-		})
-		.set("sort", { title: 1 })
-		.set("toObject", {
-			virtuals: false,
-
-			transform: function(doc, ret, options) {
-				delete ret.__v;
-				delete ret.id;
-			}
-		});
-
-	rest.aggregate("tvshows", Video, [
-		{ $project: {
-			show: "$tags",
-			season: "$tags",
-			episode: "$tags",
-			tags: "$tags",
-			path: 1,
-			length: 1,
-			title: 1
-		} },
-		{ $unwind: "$show" },
-		{ $match: { show: { $regex: /show:/ } } },
-		{ $unwind: "$season" },
-		{ $match: { season: { $regex: /season:/ } } },
-		{ $unwind: "$episode" },
-		{ $match: { episode: { $regex: /episode:/ } } },
-		{ $project: {
-			path: 1,
-			length: 1,
-			title: 1,
-			show: { $substr: [ "$show", 5, -1 ] },
-			season: { $substr: [ "$season", 7, -1 ] },
-			episode: { $substr: [ "$episode", 8, -1 ] }
-		} },
-		{ $sort: {
-			show: 1,
-			season: 1,
-			episode: -1
-		} },
-		{ $group: {
-			_id: {
-				show: "$show",
-				season: "$season"
-			},
-			episodes: { $addToSet: {
-				number: "$episode",
-				videoId: "$_id",
-				path: "$path",
-				length: "$length",
-				title: "$title",
-				show: "$show",
-				season: "$season"
-			} }
-		} },
-		{ $group: {
-			_id: "$_id.show",
-			seasons: { $addToSet: {
-				number: "$_id.season",
-				episodes: "$episodes"
-			} }
-		} }
-	]);
 }
 
 

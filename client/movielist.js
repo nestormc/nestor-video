@@ -1,44 +1,54 @@
 /*jshint browser:true*/
 /*global define*/
-define(["ui", "router", "resources", "track", "ist!templates/movielist"],
-function(ui, router, resources, VideoTrack, movielistTemplate) {
+define(["ist", "ui", "router", "resources", "track", "ist!templates/movielist"],
+function(ist, ui, router, resources, VideoTrack, movielistTemplate) {
 	"use strict";
+	
+	function enqueue(dataset, next) {
+		ui.player.enqueue({
+			provider: "video",
+			id: "movie:" + dataset.id,
+			track: new VideoTrack(dataset)
+		}, next);
+	}
 
-	var movielist;
+	var contentListConfig = {
+		resource: resources.movies,
+		dataMapper: function(movies) { return { movies: movies }; },
+
+		routes: {
+			"!enqueue/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				enqueue(movie.dataset, true);
+				next();
+			},
+
+			"!add/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				enqueue(movie.dataset);
+				next();
+			}
+		},
+
+		root: {
+			template: movielistTemplate,
+
+			selector: ".movielist",
+			childrenArray: "movies",
+			childrenConfig: "movie",
+			childSelector: ".movie"
+		},
+
+		movie: {
+			template: ist("@use 'video-movie'"),
+			key: "_id",
+			selector: ".movie[data-id='%s']"
+		}
+	};
+
+
 	ui.started.add(function startMovielist() {
 		var movieView = ui.view("movies");
-
-		movieView.displayed.add(function() {
-			if (!movielist) {
-				resources.movies.list().then(function(movies) {
-					movielist = movielistTemplate.render({ movies: movies });
-					movieView.appendChild(movielist);
-				});
-			}
-		});
-		
-		function enqueue(dataset, next) {
-			ui.player.enqueue({
-				provider: "video",
-				id: dataset.id,
-				track: new VideoTrack(dataset)
-			}, next);
-		}
-
-		router.on("!enqueue/movie/:id", function(err, req, next) {
-			var movie = movieView.$(".movie[data-id='" + req.match.id + "']");
-			enqueue(movie.dataset, true);
-			next();
-		});
-
-		router.on("!add/movie/:id", function(err, req, next) {
-			var movie = movieView.$(".movie[data-id='" + req.match.id + "']");
-			enqueue(movie.dataset);
-			next();
-		});
-	});
-
-	ui.stopping.add(function() {
-		movielist = null;
+		ui.helpers.setupContentList(movieView, contentListConfig);
 	});
 });

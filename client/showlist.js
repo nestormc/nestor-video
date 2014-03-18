@@ -1,62 +1,115 @@
 /*jshint browser:true*/
 /*global define*/
-define(["dom", "ui", "router", "resources", "track", "ist!templates/showlist"],
-function(dom, ui, router, resources, VideoTrack, showlistTemplate) {
+define(["dom", "ui", "router", "resources", "track", "ist", "ist!templates/showlist"],
+function(dom, ui, router, resources, VideoTrack, ist, showlistTemplate) {
 	"use strict";
 
-	var showlist;
-	ui.started.add(function startShowlist() {
-		var showView = ui.view("tvshows");
-		var behaviour = ui.helpers.listSelectionBehaviour(
-				showView,
-				"li.episode",
-				".tvshow",
-				function onEpisodeDblclick(episodes, index) {
-					ui.player.clear();
-					ui.player.enqueue(episodes.map(function(episode) {
-						return {
-							provider: "video",
-							id: episode.dataset.id,
-							track: new VideoTrack(episode.dataset)
-						};
-					}));
+	function episodeMapper(episodes) {
+		return { tvshows: episodes.reduce(function(shows, episode) {
+			var show = shows.filter(function(show) {
+				return show.name === episode.show;
+			})[0];
 
-					ui.player.play(index);
-				}
-			);
-
-		showView.displayed.add(function() {
-			if (!showlist) {
-				resources.tvshows.list().then(function(shows) {
-					showlist = showlistTemplate.render({ shows: shows });
-					showView.appendChild(showlist);
-					showView.behave(behaviour);
-				});
+			if (!show) {
+				show = { name: episode.show, seasons: [] };
+				shows.push(show);
 			}
-		});
-		
-		function enqueue(dataset, next) {
-			ui.player.enqueue({
-				provider: "video",
-				id: dataset.id,
-				track: new VideoTrack(dataset)
-			}, next);
+
+			var season = show.seasons.filter(function(season) {
+				return season.number === episode.season;
+			})[0];
+
+			if (!season) {
+				season = { number: episode.season, episodes: [] };
+				show.seasons.push(season);
+			}
+
+			season.episodes.push(episode);
+
+			return shows;
+		}, []) };
+	}
+
+
+	function enqueue(dataset, next) {
+		ui.player.enqueue({
+			provider: "video",
+			id: "episode:" + dataset.id,
+			track: new VideoTrack(dataset)
+		}, next);
+	}
+
+
+	var contentListConfig = {
+		resource: resources.episodes,
+		dataMapper: episodeMapper,
+
+		routes: {
+			"!enqueue/episode/:id": function(view, err, req, next) {
+				var episode = view.$(".episode[data-id='" + req.match.id + "']");
+				enqueue(episode.dataset, true);
+				next();
+			},
+
+			"!add/episode/:id": function(view, err, req, next) {
+				var episode = view.$(".episode[data-id='" + req.match.id + "']");
+				enqueue(episode.dataset);
+				next();
+			}
+		},
+
+		listSelection: {
+			itemSelector: "li.episode",
+			listSelector: ".tvshow",
+			onItemDblClick: function(episodes, index) {
+				ui.player.clear();
+				ui.player.enqueue(episodes.map(function(episode) {
+					return {
+						provider: "video",
+						id: "episode:" + episode.dataset.id,
+						track: new VideoTrack(episode.dataset)
+					};
+				}));
+
+				ui.player.play(index);
+			}
+		},
+
+		root: {
+			template: showlistTemplate,
+			selector: ".showlist",
+			childrenArray: "tvshows",
+			childrenConfig: "tvshow",
+			childSelector: ".tvshow"
+		},
+
+		tvshow: {
+			template: ist("@use 'video-tvshow'"),
+			key: "name",
+			selector: ".tvshow[data-name='%s']",
+			childrenArray: "seasons",
+			childrenConfig: "season",
+			childSelector: ".season"
+		},
+
+		season: {
+			template: ist("@use 'video-tvshow-season'"),
+			key: "number",
+			selector: ".season[data-number='%s']",
+			childrenArray: "episodes",
+			childrenConfig: "episode",
+			childSelector: ".episode"
+		},
+
+		episode: {
+			template: ist("@use 'video-tvshow-episode'"),
+			key: "_id",
+			selector: ".episode[data-id='%s']",
 		}
+	};
 
-		router.on("!enqueue/episode/:id", function(err, req, next) {
-			var episode = showView.$(".episode[data-id='" + req.match.id + "']");
-			enqueue(episode.dataset, true);
-			next();
-		});
-
-		router.on("!add/episode/:id", function(err, req, next) {
-			var episode = showView.$(".episode[data-id='" + req.match.id + "']");
-			enqueue(episode.dataset);
-			next();
-		});
-	});
-
-	ui.stopping.add(function() {
-		showlist = null;
+	ui.started.add(function() {
+		var showView = ui.view("tvshows");
+		ui.helpers.setupContentList(showView, contentListConfig);
 	});
 });

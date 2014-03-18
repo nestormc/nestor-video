@@ -1,25 +1,24 @@
 @define "video-tvshow-episode"
-	li.episode[data-id={{ videoId }}][data-fulltitle={{ show }} S{{ season }}E{{ number }} {{ title }}][data-length={{ length }}]
-		span.number "{{ number }}"
-		span.title "{{ title || ('Episode ' + number) }}"
+	li.episode[data-id={{ _id }}][data-fulltitle={{ show }} S{{ season }}E{{ episode }} {{ title }}][data-length={{ length }}]
+		span.number "{{ episode }}"
+		span.title "{{ title || ('Episode ' + episode) }}"
 		span.length "{{ humanTime(length) }}"
 
 
 @define "video-tvshow-season"
-	li.content-list-header "Season {{ number }}"
-	ul.episodes.content-list
+	ul.season.content-list[data-number={{ number }}]
 		@each episodes
 			@use "video-tvshow-episode"
 
 
 @define "video-tvshow"
-	.tvshow.content-box[data-id={{ _id }}]
-		.backdrop[style=background-image: url(/rest/covers/tvshow:backdrop:{{ encodeURIComponent(_id) }})]
+	.tvshow.content-box[data-name={{ name }}]
+		.backdrop[style=background-image: url(/rest/covers/tvshow:backdrop:{{ encodeURIComponent(name) }})]
 
 		.info
 			.cover
-				img.current[src=/rest/covers/tvshow:poster:{{ _id }}]
-			span.title "{{ _id }}"
+				img.current[src=/rest/covers/tvshow:poster:{{ name }}]
+			span.title "{{ name }}"
 
 		ul.seasons
 			@each seasons
@@ -27,6 +26,6 @@
 
 
 .showlist
-	@each shows
+	@each tvshows
 		@use "video-tvshow"
 

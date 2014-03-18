@@ -130,7 +130,9 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 		if (dataset) {
 			datasetDeferred.resolve(dataset);
 		} else {
-			resources.videos.get(id).then(function(track) {
+			var split = id.split(":");
+
+			resources[split[0]].get(split[1]).then(function(track) {
 				var element = tdTemplate.render(track).firstChild;
 				datasetDeferred.resolve(element.dataset);
 			});
@@ -155,7 +157,7 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 				var format = d[1];
 
 				if (track.requestedLoad) {
-					track.video.src = "/rest/videos/" + data.id + "/stream/" + format + ":144/" + (track.requestedSeek || 0);
+					track.video.src = "/rest/videostream/" + data.id + "/" + format + ":144/" + (track.requestedSeek || 0);
 					track.video.preload = "auto";
 
 					if (track.playing) {

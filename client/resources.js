@@ -1,28 +1,33 @@
 /*jshint browser:true */
 /*global define */
 
-define(["when", "rest"], function(when, rest) {
+define(["rest", "io"], function(rest, io) {
 	"use strict";
 	
 	return {
 		movies: {
-			list: function() {
-				return rest.list("movies", { limit: 0 });
-			}
-		},
-		tvshows: {
-			list: function() {
-				return rest.list("tvshows", { limit: 0 });
-			}
-		},
-		videos: {
 			get: function(id) {
-				return rest.get("videos/%s", id, { limit: 0 });
+				return rest.get("movies/%s", id);
+			},
+
+			watch: function() {
+				return io.watch("movies");
 			}
 		},
+
+		episodes: {
+			get: function(id) {
+				return rest.get("episodes/%s", id);
+			},
+
+			watch: function() {
+				return io.watch("episodes");
+			}
+		},
+		
 		formats: {
 			list: function() {
-				return rest.get("videoformats");
+				return rest.get("videostream/formats");
 			}
 		}
 	};
