@@ -1,6 +1,14 @@
 @coverSize: 12em;
 @coverRatio: 0.68;
 
+.movie {
+	max-width: 20em;
+
+	img {
+		max-width: 100%;
+	}
+}
+
 .tvshow {
 	min-height: @coverSize + 2*@contentBoxMargin;
 
@@ -15,13 +23,13 @@
 
 		background-size: cover;
 		opacity: .1;
-	}	
+	}
 
 	.info {
 		.cover {
 			float: left;
 			margin-right: @contentBoxMargin;
-			
+
 			img {
 				max-width: @coverSize * @coverRatio;
 				max-height: @coverSize;
@@ -45,7 +53,7 @@
 			font-weight: bold;
 		}
 
-		ul.episodes {
+		ul.season {
 			list-style-type: none;
 
 			li.episode {
@@ -56,7 +64,7 @@
 				&>* {
 					vertical-align: text-top;
 				}
-				
+
 				.number {
 					margin-right: 1em;
 					color: @mlGray;
