@@ -79,7 +79,6 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 		}
 	}
 
-
 	function VideoTrack(dataset, id) {
 		var display = document.createElement("div");
 		display.className = "full-display";
@@ -132,7 +131,7 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 		} else {
 			var split = id.split(":");
 
-			resources[split[0]].get(split[1]).then(function(track) {
+			resources[split[0] + "s"].get(split[1]).then(function(track) {
 				var element = tdTemplate.render(track).firstChild;
 				datasetDeferred.resolve(element.dataset);
 			});
@@ -157,7 +156,7 @@ define(["when", "ui", "resources", "ist!templates/trackdata"], function(when, ui
 				var format = d[1];
 
 				if (track.requestedLoad) {
-					track.video.src = "/rest/videostream/" + data.id + "/" + format + ":144/" + (track.requestedSeek || 0);
+					track.video.src = "/rest/videostream/" + data.id + "/" + format + ":288/" + (track.requestedSeek || 0);
 					track.video.preload = "auto";
 
 					if (track.playing) {
