@@ -13,11 +13,11 @@
 
 @define "video-tvshow"
 	.tvshow.content-box[data-name={{ name }}]
-		.backdrop[style=background-image: url(/rest/covers/tvshow:backdrop:{{ encodeURIComponent(name) }})]
+		.backdrop[style=background-image: url({{ uri("/rest/covers/tvshow:backdrop:%s", name) }})]
 
 		.info
 			.cover
-				img.current[src=/rest/covers/tvshow:poster:{{ name }}]
+				img.current[src={{ uri("/rest/covers/tvshow:poster:%s", name) }}]
 			span.title "{{ name }}"
 
 		ul.seasons
