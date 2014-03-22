@@ -266,7 +266,7 @@ function videoPlugin(nestor) {
 
 
 	intents.on("media:file", function analyzeFile(filepath, mimetype, metadata) {
-		if (mimetype.split("/")[0] !== "video") {
+		if (!metadata) {
 			return;
 		}
 
