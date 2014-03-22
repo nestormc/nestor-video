@@ -6,58 +6,46 @@ var streamVideo = require("./stream");
 
 
 
-function ucFirst(str) {
-	return str.replace(/^(.)/, function(m, letter) { return letter.toUpperCase(); });
-}
-
-var noCap = /^(a|an|and|in|of|the)$/;
-
-function capitalize(str) {
-	return ucFirst(str.replace(/\b(\w+)\b/g, function(m, word) {
-		return word.match(noCap) ? word : ucFirst(word);
-	}));
-}
-
-
-function getVideoData(meta) {
-	var title;
-
-	if (meta.metadata.title && meta.metadata.title.length > meta.filename.length) {
-		title = meta.metadata.title;
-	} else {
-		title = meta.filename;
-	}
-
-	var data = {
-		year: meta.metadata.year || -1,
-		length: meta.format.duration,
-		tags: []
-	};
-
-	// Clean up title
-	data.title = capitalize(title
-		.replace(/\.(avi|divx|mpg|mpeg|mkv)$/i, "")
-		.replace(/\b(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|fqm|dsr)\b/ig, "")
-		.replace(/[_.]/g, " "));
-
-	// Find show title, season and episode
-	var m = data.title.match(/^(.*)s(\d+)e(\d+)(.*)$/i);
-	if (m) {
-		data.show = m[1].trim();
-		data.season = parseInt(m[2], 10);
-		data.episode = parseInt(m[3], 10);
-		data.title = m[4].trim();
-	}
-
-	return data;
-}
-
-
 function videoPlugin(nestor) {
 	var intents = nestor.intents;
 	var mongoose = nestor.mongoose;
 	var rest = nestor.rest;
 	var logger = nestor.logger;
+	var misc = nestor.misc;
+
+
+	function getVideoData(meta) {
+		var title;
+
+		if (meta.metadata.title && meta.metadata.title.length > meta.filename.length) {
+			title = meta.metadata.title;
+		} else {
+			title = meta.filename;
+		}
+
+		var data = {
+			year: meta.metadata.year || -1,
+			length: meta.format.duration,
+			tags: []
+		};
+
+		// Clean up title
+		data.title = misc.titleCase(title
+			.replace(/\.(avi|divx|mpg|mpeg|mkv)$/i, "")
+			.replace(/\b(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|fqm|dsr)\b/ig, "")
+			.replace(/[_.]/g, " "));
+
+		// Find show title, season and episode
+		var m = data.title.match(/^(.*)s(\d+)e(\d+)(.*)$/i);
+		if (m) {
+			data.show = m[1].trim();
+			data.season = parseInt(m[2], 10);
+			data.episode = parseInt(m[3], 10);
+			data.title = m[4].trim();
+		}
+
+		return data;
+	}
 
 
 
@@ -190,7 +178,7 @@ function videoPlugin(nestor) {
 			sort: movieSort,
 			toObject: movieToObject
 		});
-		
+
 		intents.emit("nestor:watchable", "episodes", Episode, {
 			sort: episodeSort,
 			toObject: movieToObject
@@ -267,7 +255,7 @@ function videoPlugin(nestor) {
 				});
 			} else {
 				subtitle = new Subtitle(subtitledata);
-				subtitle.save(function(err, savedsubtitle) {
+				subtitle.save(function(err) {
 					if (err) {
 						return error("save video", err);
 					}
