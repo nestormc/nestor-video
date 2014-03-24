@@ -271,7 +271,7 @@ function videoPlugin(nestor) {
 		}
 
 		var hasVideoStreams = metadata.streams.some(function(stream) {
-			return stream.codec_type === "video";
+			return stream.codec_type === "video" && stream.nb_frames !== "N/A";
 		});
 
 		var hasSubtitleStreams = metadata.streams.some(function(stream) {
