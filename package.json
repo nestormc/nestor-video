@@ -8,8 +8,5 @@
     "url": "git@github.com:nestormc/nestor-video"
   },
   "author": "Nicolas Joyard <joyard.nicolas@gmail.com>",
-  "license": "MIT",
-  "dependencies": {
-    "fluent-ffmpeg": "*"
-  }
+  "license": "MIT"
 }

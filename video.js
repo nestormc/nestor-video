@@ -2,8 +2,6 @@
 "use strict";
 
 var util = require("util");
-var streamVideo = require("./stream");
-
 
 
 function videoPlugin(nestor) {
@@ -127,6 +125,8 @@ function videoPlugin(nestor) {
 
 
 
+
+
 	/* Streaming endpoints */
 
 	rest.resource("videostream/:id/:format/:start")
@@ -174,6 +174,9 @@ function videoPlugin(nestor) {
 
 
 	intents.on("nestor:startup", function() {
+
+		/* Watchable collections */
+
 		intents.emit("nestor:watchable", "movies", Movie, {
 			sort: movieSort,
 			toObject: movieToObject
@@ -183,6 +186,25 @@ function videoPlugin(nestor) {
 			sort: episodeSort,
 			toObject: movieToObject
 		});
+
+
+		/* Streaming provider */
+
+		intents.emit("nestor:streaming", "video", function(id, callback) {
+			Video.findById(id, function(err, v) {
+				if (err || !v) {
+					return callback(err);
+				}
+
+				callback(null, {
+					source: v.path,
+					type: "video",
+					length: v.length,
+					mimetype: v.mime
+				});
+			});
+		});
+
 	});
 
 
