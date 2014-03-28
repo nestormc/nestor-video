@@ -167,6 +167,7 @@ function videoPlugin(nestor) {
 					source: v.path,
 					type: "video",
 					length: v.length,
+					title: v.fullTitle,
 					mimetype: v.mime
 				});
 			});
