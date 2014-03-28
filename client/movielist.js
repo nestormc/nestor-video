@@ -28,6 +28,21 @@ function(ist, ui, router, resources, movielistTemplate) {
 			}
 		},
 
+		listSelection: {
+			itemSelector: ".movie",
+			listSelector: ".movie",
+			onItemDblClick: function(movies, index) {
+				ui.player.clear();
+				ui.player.enqueue(movies.map(function(movie) {
+					return {
+						track: new ui.player.Track("video", movie.dataset.id)
+					};
+				}));
+
+				ui.player.play(index);
+			}
+		},
+
 		root: {
 			template: movielistTemplate,
 
