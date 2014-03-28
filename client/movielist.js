@@ -1,14 +1,12 @@
 /*jshint browser:true*/
 /*global define*/
-define(["ist", "ui", "router", "resources", "track", "ist!templates/movielist"],
-function(ist, ui, router, resources, VideoTrack, movielistTemplate) {
+define(["ist", "ui", "router", "resources", "ist!templates/movielist"],
+function(ist, ui, router, resources, movielistTemplate) {
 	"use strict";
-	
+
 	function enqueue(dataset, next) {
 		ui.player.enqueue({
-			provider: "video",
-			id: "movie:" + dataset.id,
-			track: new VideoTrack(dataset)
+			track: new ui.player.Track("video", dataset.id)
 		}, next);
 	}
 

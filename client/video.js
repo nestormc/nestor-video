@@ -1,14 +1,9 @@
 /*jshint browser:true*/
 /*global define*/
-define(["ui", "router", "resources", "track", "movielist", "showlist"],
-function(ui, router, resources, VideoTrack) {
+define(["ui", "router", "resources", "movielist", "showlist"],
+function(ui, router, resources) {
 	"use strict";
 
-	ui.started.add(function() {
-		ui.player.register("video", function(id) {
-			return new VideoTrack(null, id);
-		});
-	});
 
 	return {
 		title: "video",
@@ -16,12 +11,14 @@ function(ui, router, resources, VideoTrack) {
 		views: {
 			movies: {
 				type: "main",
-				link: "movies"
+				link: "movies",
+				icon: "movie"
 			},
 
 			tvshows: {
 				type: "main",
-				link: "tv shows"
+				link: "tv shows",
+				icon: "tv"
 			}
 		}
 	};

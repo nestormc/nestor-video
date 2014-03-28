@@ -1,7 +1,7 @@
 /*jshint browser:true*/
 /*global define*/
-define(["dom", "ui", "router", "resources", "track", "ist", "ist!templates/showlist"],
-function(dom, ui, router, resources, VideoTrack, ist, showlistTemplate) {
+define(["dom", "ui", "router", "resources", "ist", "ist!templates/showlist"],
+function(dom, ui, router, resources, ist, showlistTemplate) {
 	"use strict";
 
 	function episodeMapper(episodes) {
@@ -33,9 +33,7 @@ function(dom, ui, router, resources, VideoTrack, ist, showlistTemplate) {
 
 	function enqueue(dataset, next) {
 		ui.player.enqueue({
-			provider: "video",
-			id: "episode:" + dataset.id,
-			track: new VideoTrack(dataset)
+			track: new ui.player.Track("video", dataset.id)
 		}, next);
 	}
 
@@ -65,9 +63,7 @@ function(dom, ui, router, resources, VideoTrack, ist, showlistTemplate) {
 				ui.player.clear();
 				ui.player.enqueue(episodes.map(function(episode) {
 					return {
-						provider: "video",
-						id: "episode:" + episode.dataset.id,
-						track: new VideoTrack(episode.dataset)
+						track: new ui.player.Track("video", episode.dataset.id)
 					};
 				}));
 

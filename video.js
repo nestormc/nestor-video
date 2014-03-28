@@ -125,39 +125,6 @@ function videoPlugin(nestor) {
 
 
 
-
-
-	/* Streaming endpoints */
-
-	rest.resource("videostream/:id/:format/:start")
-		.get(function(req, cb) {
-			var format = req.params.format;
-			var start = req.params.start;
-
-			Video.findById(req.params.id, function(err, v) {
-				if (err) {
-					cb(err);
-				} else if (!v) {
-					cb.notFound();
-				} else {
-					cb.custom(function(req, res, next) {
-						try {
-							streamVideo(v, format, parseFloat(start), res);
-						} catch(e) {
-							res.send(404);
-						}
-					});
-				}
-			});
-		});
-
-	rest.resource("videostream/formats")
-		.get(function(req, cb) {
-			cb(null, streamVideo.formats);
-		});
-
-
-
 	/* Intent handlers */
 
 	function fetchThumbs(filepath, id, duration) {
