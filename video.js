@@ -10,6 +10,7 @@ function videoPlugin(nestor) {
 	var rest = nestor.rest;
 	var logger = nestor.logger;
 	var misc = nestor.misc;
+	var config = nestor.config;
 
 
 	function getVideoData(meta) {
@@ -163,32 +164,32 @@ function videoPlugin(nestor) {
 					return callback(err);
 				}
 
-				Subtitle.find(
-					{ path: {$regex:  new RegExp("^" + misc.regexpEscape(v.path.replace(/\.[^.]*$/, ""))) } },
-					function(err, subtitle) {
-						if (err) {
-							return callback(err);
+				var data = {
+					source: v.path,
+					type: "video",
+					length: v.length,
+					title: v.fullTitle,
+					mimetype: v.mime
+				};
+
+				if (config.burnSubtitles) {
+					Subtitle.find(
+						{ path: {$regex: new RegExp("^" + misc.regexpEscape(v.path.replace(/\.[^.]*$/, ""))) } },
+						function(err, subtitle) {
+							if (err) {
+								return callback(err);
+							}
+
+							if (subtitle) {
+								data.filters = ["subtitles=" + subtitle.path];
+							}
+
+							callback(null, data);
 						}
-
-						var data = {
-							source: v.path,
-							type: "video",
-							length: v.length,
-							title: v.fullTitle,
-							mimetype: v.mime
-						};
-
-						if (subtitle) {
-						/* TODO Will be enabled once we figure out a way to determine if ffmpeg sub filters are available
-							data.filters = [
-								"subtitles=" + subtitle.path
-							];
-						*/
-						}
-
-						callback(null, data);
-					}
-				);
+					);
+				} else {
+					callback(null, data);
+				}
 			});
 		});
 
