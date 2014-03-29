@@ -2,6 +2,7 @@
 "use strict";
 
 var util = require("util");
+var path = require("path");
 
 
 function videoPlugin(nestor) {
@@ -13,17 +14,17 @@ function videoPlugin(nestor) {
 	var config = nestor.config;
 
 
-	function getVideoData(meta) {
+	function getVideoData(filename, meta) {
 		var title;
 
-		if (meta.metadata.title && meta.metadata.title.length > meta.filename.length) {
-			title = meta.metadata.title;
+		if (meta.tags.title && meta.tags.title.length > filename.length) {
+			title = meta.tags.title;
 		} else {
-			title = meta.filename;
+			title = filename;
 		}
 
 		var data = {
-			year: meta.metadata.year || -1,
+			year: meta.tags.year || -1,
 			length: meta.format.duration,
 			tags: []
 		};
@@ -201,7 +202,7 @@ function videoPlugin(nestor) {
 			logger.error("Could not %s: %s", action, err.message || err);
 		}
 
-		var videodata = getVideoData(metadata);
+		var videodata = getVideoData(path.basename(filepath), metadata);
 
 		videodata.path = filepath;
 		videodata.mime = mimetype;
