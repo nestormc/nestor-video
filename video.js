@@ -174,7 +174,7 @@ function videoPlugin(nestor) {
 				};
 
 				if (config.burnSubtitles) {
-					Subtitle.find(
+					Subtitle.findOne(
 						{ path: {$regex: new RegExp("^" + misc.regexpEscape(v.path.replace(/\.[^.]*$/, ""))) } },
 						function(err, subtitle) {
 							if (err) {
@@ -182,7 +182,7 @@ function videoPlugin(nestor) {
 							}
 
 							if (subtitle) {
-								data.filters = ["subtitles=" + subtitle.path];
+								data.filters = ["subtitles=" + subtitle.path.replace(/([\[\],;'])/g, "\\$1")];
 							}
 
 							callback(null, data);
