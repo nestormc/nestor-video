@@ -15,28 +15,32 @@ function videoPlugin(nestor) {
 
 
 	function getVideoData(filename, meta) {
-		var title;
-
-		if (meta.tags.title && meta.tags.title.length > filename.length) {
-			title = meta.tags.title;
-		} else {
-			title = filename;
-		}
+		var title = filename;
 
 		var data = {
 			year: meta.tags.year || -1,
 			length: meta.format.duration,
-			tags: []
+			tags: [],
+			title: filename
 		};
 
+		// Try to find year in title
+		var ymatch = data.title.match(/[(\[](\d{4})[)\]]/);
+		if (ymatch) {
+			data.year = Number(ymatch[1]);
+			data.title = data.title.replace(ymatch[1], "");
+		}
+
 		// Clean up title
-		data.title = misc.titleCase(title
-			.replace(/\.(avi|divx|mpg|mpeg|mkv)$/i, "")
-			.replace(/\b(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|fqm|dsr)\b/ig, "")
-			.replace(/[_.]/g, " "));
+		data.title = data.title
+			.replace(/\.(avi|divx|mpg|mpeg|mkv|mp4|mov|ogg|ogv)$/i, "")
+			.replace(/\b(dvdrip|xvid|divx|hdtv|bdrip|fastsub|vostfr|notv|dsr|vtv)\b/ig, "")
+			.replace(/\b(aXXo|LOL|FQM|fqm)\b/g, "")
+			.replace(/[_.]/g, " ")
+			.replace(/(--|\[\]|\(\)|^\W+|\W+$)/g, "");
 
 		// Find show title, season and episode
-		var m = data.title.match(/^(.*)s(\d+)e(\d+)(.*)$/i);
+		var m = data.title.match(/^(.*)s?(\d+)e(\d+)(.*)$/i);
 		if (m) {
 			data.show = m[1].trim();
 			data.season = parseInt(m[2], 10);
