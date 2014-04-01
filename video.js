@@ -5,6 +5,15 @@ var util = require("util");
 var path = require("path");
 
 
+function mapStream(stream) {
+	return {
+		index: Number(stream.index),
+		type: stream.codec_type,
+		codec: stream.codec_name
+	};
+}
+
+
 function videoPlugin(nestor) {
 	var intents = nestor.intents;
 	var mongoose = nestor.mongoose;
@@ -15,14 +24,15 @@ function videoPlugin(nestor) {
 
 
 	function getVideoData(filename, meta) {
-		var title = filename;
-
 		var data = {
 			year: meta.tags.year || -1,
 			length: meta.format.duration,
 			tags: [],
-			title: filename
+			title: filename,
+			format: meta.format.format_name
 		};
+
+		data.streams = meta.streams.map(mapStream);
 
 		// Try to find year in title
 		var ymatch = data.title.match(/[(\[](\d{4})[)\]]/);
@@ -55,12 +65,20 @@ function videoPlugin(nestor) {
 
 	/* Base schema for all video models */
 
+	var StreamSchema = new mongoose.Schema({
+		index: Number,
+		type: { type: String },
+		codec: String
+	}, { _id: false });
+
 	function BaseSchema() {
 		mongoose.Schema.apply(this, arguments);
 
 		this.add({
 			path: String,
-			mime: String
+			mime: String,
+			format: String,
+			streams: [StreamSchema]
 		});
 	}
 	util.inherits(BaseSchema, mongoose.Schema);
@@ -79,10 +97,10 @@ function videoPlugin(nestor) {
 	/* Movie schema */
 
 	var MovieSchema = new BaseSchema({
-			title: String,
-			year: Number,
-			length: Number,
-			tags: [String]
+		title: String,
+		year: Number,
+		length: Number,
+		tags: [String]
 	});
 
 	MovieSchema.virtual("fullTitle").get(function() {
@@ -109,14 +127,14 @@ function videoPlugin(nestor) {
 	/* Episode schema */
 
 	var EpisodeSchema = new BaseSchema({
-			title: String,
-			year: Number,
-			length: Number,
-			tags: [String],
-			show: String,
-			season: Number,
-			episode: Number
-		});
+		title: String,
+		year: Number,
+		length: Number,
+		tags: [String],
+		show: String,
+		season: Number,
+		episode: Number
+	});
 
 	EpisodeSchema.virtual("fullTitle").get(function() {
 		return this.show + " S" + this.season + "E" + this.episode + " " + this.title;
@@ -174,7 +192,9 @@ function videoPlugin(nestor) {
 					type: "video",
 					length: v.length,
 					title: v.fullTitle,
-					mimetype: v.mime
+
+					format: v.format,
+					streams: v.streams
 				};
 
 				if (config.burnSubtitles) {
@@ -247,14 +267,16 @@ function videoPlugin(nestor) {
 		});
 	}
 
-	function saveSubtitle(filepath, mimetype) {
+	function saveSubtitle(filepath, mimetype, metadata) {
 		function error(action, err) {
 			logger.error("Could not %s: %s", action, err.message || err);
 		}
 
 		var subtitledata = {
 			path: filepath,
-			mime: mimetype
+			mime: mimetype,
+			format: metadata.format.format_name,
+			streams: metadata.streams.map(mapStream)
 		};
 
 		Subtitle.findOne({ path: filepath }, function(err, subtitle) {
@@ -286,7 +308,7 @@ function videoPlugin(nestor) {
 		}
 
 		var hasVideoStreams = metadata.streams.some(function(stream) {
-			return stream.codec_type === "video" && stream.nb_frames && stream.nb_frames !== "N/A";
+			return stream.codec_type === "video" && ["bmp", "ansi", "jpeg2000", "mjpeg", "png"].indexOf(stream.codec_name) === -1;
 		});
 
 		var hasSubtitleStreams = metadata.streams.some(function(stream) {
@@ -296,7 +318,7 @@ function videoPlugin(nestor) {
 		if (hasVideoStreams) {
 			saveVideo(filepath, mimetype, metadata);
 		} else if (hasSubtitleStreams) {
-			saveSubtitle(filepath, mimetype);
+			saveSubtitle(filepath, mimetype, metadata);
 		}
 	});
 }
