@@ -9,7 +9,9 @@ function mapStream(stream) {
 	return {
 		index: Number(stream.index),
 		type: stream.codec_type,
-		codec: stream.codec_name
+		codec: stream.codec_name,
+		profile: stream.profile,
+		level: stream.level
 	};
 }
 
@@ -33,6 +35,10 @@ function videoPlugin(nestor) {
 		};
 
 		data.streams = meta.streams.map(mapStream);
+
+		var vstream = meta.streams.filter(function(s) { return s.codec_type === "video"; })[0];
+		data.width = vstream.width;
+		data.height = vstream.height;
 
 		// Try to find year in title
 		var ymatch = data.title.match(/[(\[](\d{4})[)\]]/);
@@ -68,7 +74,9 @@ function videoPlugin(nestor) {
 	var StreamSchema = new mongoose.Schema({
 		index: Number,
 		type: { type: String },
-		codec: String
+		codec: String,
+		profile: String,
+		level: Number
 	}, { _id: false });
 
 	function BaseSchema() {
@@ -78,7 +86,9 @@ function videoPlugin(nestor) {
 			path: String,
 			mime: String,
 			format: String,
-			streams: [StreamSchema]
+			streams: [StreamSchema],
+			width: Number,
+			height: Number
 		});
 	}
 	util.inherits(BaseSchema, mongoose.Schema);
@@ -194,7 +204,10 @@ function videoPlugin(nestor) {
 					title: v.fullTitle,
 
 					format: v.format,
-					streams: v.streams
+					streams: v.streams,
+
+					width: v.width,
+					height: v.height
 				};
 
 				if (config.burnSubtitles) {
