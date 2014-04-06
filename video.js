@@ -210,24 +210,20 @@ function videoPlugin(nestor) {
 					height: v.height
 				};
 
-				if (config.burnSubtitles) {
-					Subtitle.findOne(
-						{ path: {$regex: new RegExp("^" + misc.regexpEscape(v.path.replace(/\.[^.]*$/, ""))) } },
-						function(err, subtitle) {
-							if (err) {
-								return callback(err);
-							}
-
-							if (subtitle) {
-								data.filters = ["subtitles=" + subtitle.path.replace(/([\[\],;'])/g, "\\$1")];
-							}
-
-							callback(null, data);
+				Subtitle.findOne(
+					{ path: {$regex: new RegExp("^" + misc.regexpEscape(v.path.replace(/\.[^.]*$/, ""))) } },
+					function(err, subtitle) {
+						if (err) {
+							return callback(err);
 						}
-					);
-				} else {
-					callback(null, data);
-				}
+
+						if (subtitle) {
+							data.subtitles = subtitle.path;
+						}
+
+						callback(null, data);
+					}
+				);
 			});
 		});
 
