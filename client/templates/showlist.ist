@@ -6,14 +6,15 @@
 
 
 @define "video-tvshow-season"
-	ul.season.content-list[data-number={{ number }}]
+	ul.season.content-list-with-header[data-number={{ number }}]
+		li.content-list-header "Season {{ number }}"
 		@each episodes
 			@use "video-tvshow-episode"
 
 
 @define "video-tvshow"
 	.tvshow.content-box[data-name={{ name }}]
-		.backdrop[style=background-image: url({{ uri("/rest/covers/tvshow:backdrop:%s", name) }})]
+		/*.backdrop[style=background-image: url({{ uri("/rest/covers/tvshow:backdrop:%s", name) }})]*/
 
 		.info
 			.cover
