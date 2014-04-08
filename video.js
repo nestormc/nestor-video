@@ -56,7 +56,7 @@ function videoPlugin(nestor) {
 			.replace(/(--|\[\]|\(\)|^\W+|\W+$)/g, "");
 
 		// Find show title, season and episode
-		var m = data.title.match(/^(.*)s?(\d+)e(\d+)(.*)$/i);
+		var m = data.title.match(/^(.*?)s?(\d+)[ex\.-](\d+)(.*)$/i);
 		if (m) {
 			data.show = m[1].trim();
 			data.season = parseInt(m[2], 10);
