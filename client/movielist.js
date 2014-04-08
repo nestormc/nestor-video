@@ -25,6 +25,14 @@ function(ist, ui, router, resources, movielistTemplate) {
 				var movie = view.$(".movie[data-id='" + req.match.id + "']");
 				enqueue(movie.dataset);
 				next();
+			},
+
+			"!play/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				ui.player.clear();
+				enqueue(movie.dataset);
+				ui.player.play(0);
+				next();
 			}
 		},
 

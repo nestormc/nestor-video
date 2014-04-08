@@ -1,11 +1,50 @@
 @coverSize: 12em;
 @coverRatio: 0.68;
 
-.movie {
-	max-width: 20em;
+@thumbSize: 20em;
+@thumbRatio: 16/9;
+@playIconSize: 6em;
 
-	img {
-		max-width: 100%;
+.movie {
+	width: @thumbSize + 2*@contentBoxMargin;
+
+	.cover {
+		background-color: black;
+		background-size: contain;
+		background-position: center;
+		background-repeat: no-repeat;
+
+		width: @thumbSize;
+		height: @thumbSize / @thumbRatio;
+		line-height: @thumbSize / @thumbRatio;
+
+		a.play {
+			text-align: center;
+			display: block;
+			width: 100%;
+			height: 100%;
+
+			svg {
+				display: none;
+				vertical-align: middle;
+				width: @playIconSize;
+				height: @playIconSize;
+			}
+
+			&:hover svg {
+				display: inline;
+			}
+		}
+	}
+
+	.title {
+		color: @darkGray;
+		font-weight: bold;
+	}
+
+	.length {
+		text-align: right;
+		color: @mlGray;
 	}
 }
 
