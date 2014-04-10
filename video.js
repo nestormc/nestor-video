@@ -3,6 +3,7 @@
 
 var util = require("util");
 var path = require("path");
+var images = require("./images");
 
 
 function mapStream(stream) {
@@ -22,7 +23,8 @@ function videoPlugin(nestor) {
 	var rest = nestor.rest;
 	var logger = nestor.logger;
 	var misc = nestor.misc;
-	var config = nestor.config;
+
+	var imageStore = images(nestor);
 
 
 	function getVideoData(filename, meta) {
@@ -161,19 +163,6 @@ function videoPlugin(nestor) {
 
 	/* Intent handlers */
 
-	function fetchThumbs(filepath, id, duration) {
-		[1, 2, 3].forEach(function(mult) {
-			nestor.intents.emit(
-				"cover:video-thumb",
-				filepath,
-				mult,
-				id,
-				mult * duration / 4
-			);
-		});
-	}
-
-
 	intents.on("nestor:startup", function() {
 
 		/* Watchable collections */
@@ -253,10 +242,10 @@ function videoPlugin(nestor) {
 						return error("update video", err);
 					}
 
-					fetchThumbs(filepath, video._id, metadata.format.duration);
+					imageStore.extractThumbs(filepath, video._id, metadata.format.duration);
 
 					if (videodata.show) {
-						nestor.intents.emit("cover:tvshow", videodata.show);
+						imageStore.fetchShowImages(videodata.show);
 					}
 				});
 			} else {
@@ -266,10 +255,10 @@ function videoPlugin(nestor) {
 						return error("save video", err);
 					}
 
-					fetchThumbs(filepath, savedvideo._id, metadata.format.duration);
+					imageStore.extractThumbs(filepath, savedvideo._id, metadata.format.duration);
 
 					if (videodata.show) {
-						nestor.intents.emit("cover:tvshow", videodata.show);
+						imageStore.fetchShowImages(videodata.show);
 					}
 				});
 			}
@@ -337,7 +326,6 @@ videoPlugin.manifest = {
 	name: "video",
 	description: "Video library",
 	dependencies: ["nestor-media"],
-	recommends: ["nestor-coverart"],
 	client: {
 		public: __dirname + "/client/public",
 		build: {

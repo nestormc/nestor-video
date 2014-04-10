@@ -1,6 +1,6 @@
 @define "video-movie"
 	.movie.inline-box[data-id={{ _id }}][data-length={{ length }}][data-fulltitle={{ title }}]
-		.cover[style=background-image: url(/rest/covers/video:thumb-2:{{ _id }})]
+		.cover[style=background-image: url(/rest/video-images/thumb:{{ _id }}:2)]
 			a.play[href={{ uri("#!video/play/movie/%s", _id) }}]
 				@svg "images/play.svg"
 		.title "{{ title }}"
