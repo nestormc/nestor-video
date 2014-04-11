@@ -2,6 +2,7 @@
 "use strict";
 
 var stream = require("stream");
+var when = require("when");
 var tmdb = require("./tmdb");
 
 var fetchedShows = [];
@@ -55,6 +56,7 @@ module.exports = function imageStore(nestor) {
 
 	intents.on("nestor:startup", function() {
 		intents.emit("nestor:scheduler:register", "video:ffmpeg-thumb", function(data) {
+			var d = when.defer();
 			var passthrough = new stream.PassThrough();
 
 			var buffers = [];
@@ -66,6 +68,7 @@ module.exports = function imageStore(nestor) {
 			});
 
 			passthrough.on("end", function() {
+				d.resolve();
 				data.callback(Buffer.concat(buffers, length), "image/jpeg");
 			});
 
@@ -76,10 +79,12 @@ module.exports = function imageStore(nestor) {
 				.withVideoCodec("mjpeg")
 				.takeFrames(1)
 				.on("error", function(err) {
+					d.resolve();
 					logger.warn("Error while fetching thumbnail from %s: %s", data.path, err);
 				})
 				.writeToStream(passthrough);
 
+			return d.promise;
 		});
 	});
 
