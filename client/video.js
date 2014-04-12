@@ -12,13 +12,13 @@ function(ui, router, resources) {
 			movies: {
 				type: "main",
 				link: "movies",
-				icon: "movie"
+				icon: "video:movie"
 			},
 
 			tvshows: {
 				type: "main",
 				link: "tv shows",
-				icon: "tv"
+				icon: "video:tv"
 			}
 		}
 	};
