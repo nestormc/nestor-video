@@ -2,7 +2,7 @@
 	.movie.inline-box[data-id={{ _id }}][data-length={{ length }}][data-fulltitle={{ title }}]
 		.cover[style=background-image: url(/rest/video-images/thumb:{{ _id }}:2)]
 			a.play[href={{ uri("#!video/play/movie/%s", _id) }}]
-				@icon "play"
+				@svg { src: "icons/play.svg", colorize: true }
 		.title "{{ title }}"
 		.length "{{ humanTime(length) }}"
 
