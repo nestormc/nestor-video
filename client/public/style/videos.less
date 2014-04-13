@@ -82,7 +82,7 @@
 		}
 	}
 
-	ul.seasons {
+	ul.season {
 		list-style-type: none;
 		margin-top: @contentBoxMargin;
 		margin-left: @coverSize * @coverRatio + @contentBoxMargin;
@@ -92,36 +92,32 @@
 			font-weight: bold;
 		}
 
-		ul.season {
-			list-style-type: none;
-
-			li.episode {
-				position: relative;
+		li.episode {
+			position: relative;
 
 
 
-				&>* {
-					vertical-align: text-top;
-				}
+			&>* {
+				vertical-align: text-top;
+			}
 
-				.number {
-					margin-right: 1em;
-					color: @mlGray;
+			.number {
+				margin-right: 1em;
+				color: @mlGray;
 
-					display: inline-block;
-					width: 1.5em;
-					text-align: right;
-				}
+				display: inline-block;
+				width: 1.5em;
+				text-align: right;
+			}
 
-				.title {
-					display: inline-block;
-				}
+			.title {
+				display: inline-block;
+			}
 
-				.length {
-					position: absolute;
-					right: 1em;
-					color: @mlGray;
-				}
+			.length {
+				position: absolute;
+				right: 1em;
+				color: @mlGray;
 			}
 		}
 	}

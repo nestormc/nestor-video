@@ -21,9 +21,8 @@
 				img.current[src={{ uri("/rest/video-images/tvshow:poster:%s", name) }}]
 			span.title "{{ name }}"
 
-		ul.seasons
-			@each seasons
-				@use "video-tvshow-season"
+		@each seasons
+			@use "video-tvshow-season"
 
 
 .showlist
