@@ -3,7 +3,52 @@
 		.cover[style=background-image: url(/rest/video-images/thumb:{{ _id }}:2)]
 			a.play[href={{ uri("#!video/play/movie/%s", _id) }}]
 				@svg { src: "icons/play.svg", colorize: true }
-		.title "{{ title }}"
+		.title.editable "{{ title }}"
+		@menu
+			a.action-with-icon \
+			  [href={{ uri("#!video/play/movie/%s", _id) }}]
+				@icon "play"
+				"Play"
+			a.action-with-icon \
+			  [href={{ uri("#!video/enqueue/movie/%s", _id) }}]
+				@icon "playlist-enqueue"
+				"Play next"
+			a.action-with-icon \
+			  [href={{ uri("#!video/add/movie/%s", _id) }}]
+				@icon "playlist-add"
+				"Add to playlist"
+
+			.menu-separator
+
+			@if-right "video:edit-tags"
+				a.action-with-icon.edit \
+				  [href={{ uri("#!video/edit/movie/%s", _id) }}]
+					@icon "edit"
+					"Edit metadata"
+
+				a.action-with-icon.save \
+				  [href={{ uri("#!video/edit-commit/movie/%s", _id) }}]
+					@icon "commit"
+					"Save edits"
+
+				a.action-with-icon.cancel \
+				  [href={{ uri("#!video/edit-cancel/movie/%s", _id) }}]
+					@icon "cancel"
+					"Cancel edits"
+
+			.menu-separator
+
+			a.action-with-icon \
+			  [href={{ uri("/download/video/movie:%s", _id) }}]
+				@icon "share:download"
+				"Download movie"
+
+			@if-right "nestor:shares"
+				a.action-with-icon \
+				  [href={{ uri("#!video/share/movie/%s/%s", _id, title) }}]
+					@icon "share:share"
+					"Share movie"
+
 		.length "{{ humanTime(length) }}"
 
 .movielist

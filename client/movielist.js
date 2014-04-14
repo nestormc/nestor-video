@@ -1,7 +1,7 @@
 /*jshint browser:true*/
 /*global define*/
-define(["ist", "ui", "router", "resources", "ist!templates/movielist"],
-function(ist, ui, router, resources, movielistTemplate) {
+define(["ist", "dom", "ui", "router", "resources", "plugins", "ist!templates/movielist"],
+function(ist, dom, ui, router, resources, plugins, movielistTemplate) {
 	"use strict";
 
 	function enqueue(dataset, next) {
@@ -32,6 +32,49 @@ function(ist, ui, router, resources, movielistTemplate) {
 				ui.player.clear();
 				enqueue(movie.dataset);
 				ui.player.play(0);
+				next();
+			},
+
+			"!share/movie/:id/:title": function(view, err, req, next) {
+				plugins.share.shareResource("video", "movie:" + req.match.id, "Movie " + req.match.title);
+				next();
+			},
+
+			"!edit/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				movie.classList.add("editing");
+
+				dom.$$(movie, ".editable").forEach(function(elem) {
+					elem.previousContent = elem.textContent;
+					elem.contentEditable = "true";
+				});
+
+				next();
+			},
+
+			"!edit-cancel/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				movie.classList.remove("editing");
+
+				dom.$$(movie, ".editable").forEach(function(elem) {
+					elem.textContent = elem.previousContent;
+					elem.contentEditable = "inherit";
+				});
+
+				next();
+			},
+
+			"!edit-commit/movie/:id": function(view, err, req, next) {
+				var movie = view.$(".movie[data-id='" + req.match.id + "']");
+				movie.classList.remove("editing");
+
+				dom.$$(movie, ".editable").forEach(function(elem) {
+					elem.textContent = elem.previousContent;
+					elem.contentEditable = "inherit";
+				});
+
+				console.log("TODO commit update");
+
 				next();
 			}
 		},
@@ -71,5 +114,9 @@ function(ist, ui, router, resources, movielistTemplate) {
 	ui.started.add(function startMovielist() {
 		var movieView = ui.view("movies");
 		ui.helpers.setupContentList(movieView, contentListConfig);
+
+		plugins.share.setShareIcons("video", {
+			"video:movie": /^movie:/
+		});
 	});
 });

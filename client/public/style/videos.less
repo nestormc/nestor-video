@@ -7,6 +7,24 @@
 
 .movie {
 	width: @thumbSize + 2*@contentBoxMargin;
+	margin-right: 0 !important;
+	margin-bottom: 0 !important;
+
+	.menu {
+		.cancel, .save {
+			display: none;
+		}
+	}
+
+	&.editing .menu {
+		.edit {
+			display: none;
+		}
+
+		.cancel, .save {
+			display: block;
+		}
+	}
 
 	.cover {
 		background-color: black;
@@ -44,7 +62,6 @@
 	}
 
 	.length {
-		text-align: right;
 		color: @mlGray;
 	}
 }
