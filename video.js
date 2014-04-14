@@ -165,6 +165,13 @@ function videoPlugin(nestor) {
 
 	intents.on("nestor:startup", function() {
 
+		intents.emit("nestor:right", {
+			name: "video:edit-tags",
+			description: "Edit video metadata",
+			route: "/TODO*"
+		});
+
+
 		/* Watchable collections */
 
 		intents.emit("nestor:watchable", "movies", Movie, {
@@ -216,6 +223,30 @@ function videoPlugin(nestor) {
 			});
 		});
 
+		// Shared resource handler
+
+		intents.emit("share:provider", "video", function(id, builder, callback) {
+			if (id.indexOf(":") === -1) {
+				return callback(new Error("Invalid resource id: " + id));
+			}
+
+			var parts = id.split(":");
+			var type = parts[0];
+			var rid = parts[1];
+
+			if (type === "movie") {
+				Movie.findById(rid, function(err, movie) {
+					if (err || !movie) {
+						return callback(new Error("Unknown movie " + rid));
+					}
+
+					builder.addFile(path.basename(movie.path), movie.path);
+					callback();
+				});
+			} else {
+				return callback(new Error("Invalid resource id: " + id));
+			}
+		});
 	});
 
 
