@@ -1,5 +1,6 @@
-@coverSize: 12em;
-@coverRatio: 0.68;
+@posterSize: 12em;
+@smallPosterSize: 6em;
+@posterRatio: 0.68;
 
 @thumbSize: 16em;
 @thumbRatio: 16/9;
@@ -67,7 +68,7 @@
 }
 
 .tvshow {
-	min-height: @coverSize + 2*@contentBoxMargin;
+	min-height: @posterSize + 2*@contentBoxMargin;
 
 	position: relative;
 
@@ -88,8 +89,13 @@
 			margin-right: @contentBoxMargin;
 
 			img {
-				max-width: @coverSize * @coverRatio;
-				max-height: @coverSize;
+				max-width: @posterSize * @posterRatio;
+				max-height: @posterSize;
+
+				@media @medium {
+					max-width: @smallPosterSize * @posterRatio;
+					max-height: @smallPosterSize;
+				}
 			}
 		}
 
@@ -103,7 +109,11 @@
 	ul.season {
 		list-style-type: none;
 		margin-top: @contentBoxMargin;
-		margin-left: @coverSize * @coverRatio + @contentBoxMargin;
+		margin-left: @posterSize * @posterRatio + @contentBoxMargin;
+
+		@media @medium {
+			margin-left: @smallPosterSize * @posterRatio + @contentBoxMargin;
+		}
 
 		li.content-list-header {
 			margin-top: @contentBoxMargin;
@@ -112,29 +122,22 @@
 
 		li.episode {
 			position: relative;
-
-
-
-			&>* {
-				vertical-align: text-top;
-			}
+			display: flex;
+			flex-flow: row wrap;
+			align-items: baseline;
 
 			.number {
 				margin-right: 1em;
 				color: @mlGray;
-
-				display: inline-block;
-				width: 1.5em;
+				flex-base: 1.5em;
 				text-align: right;
 			}
 
 			.title {
-				display: inline-block;
 			}
 
 			.length {
-				position: absolute;
-				right: 1em;
+				margin-left: auto;
 				color: @mlGray;
 			}
 		}
